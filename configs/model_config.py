@@ -10,11 +10,14 @@ logger.setLevel(logging.INFO)
 logging.basicConfig(format=LOG_FORMAT)
 
 embedding_model_dict = {
-    "ernie-tiny": "nghuyong/ernie-3.0-nano-zh",
-    "ernie-base": "nghuyong/ernie-3.0-base-zh",
-    "text2vec-base": "shibing624/text2vec-base-chinese",
+    # "ernie-tiny": "nghuyong/ernie-3.0-nano-zh",
+    # "ernie-base": "nghuyong/ernie-3.0-base-zh",
+    # "text2vec-base": "shibing624/text2vec-base-chinese",
     "text2vec": "GanymedeNil/text2vec-large-chinese",
 }
+
+embedding_model_dict["text2vec"]="/sentence_transformes/GanymedeNil_text2vec-large-chinese"
+
 
 # Embedding model name
 EMBEDDING_MODEL = "text2vec"
@@ -26,24 +29,24 @@ EMBEDDING_DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backe
 # supported LLM models
 # llm_model_dict 处理了loader的一些预设行为，如加载位置，模型名称，模型处理器实例
 llm_model_dict = {
-    "chatglm-6b-int4-qe": {
-        "name": "chatglm-6b-int4-qe",
-        "pretrained_model_name": "THUDM/chatglm-6b-int4-qe",
-        "local_model_path": None,
-        "provides": "ChatGLM"
-    },
+    # "chatglm-6b-int4-qe": {
+    #     "name": "chatglm-6b-int4-qe",
+    #     "pretrained_model_name": "THUDM/chatglm-6b-int4-qe",
+    #     "local_model_path": None,
+    #     "provides": "ChatGLM"
+    # },
     "chatglm-6b-int4": {
         "name": "chatglm-6b-int4",
         "pretrained_model_name": "THUDM/chatglm-6b-int4",
         "local_model_path": None,
         "provides": "ChatGLM"
     },
-    "chatglm-6b-int8": {
-        "name": "chatglm-6b-int8",
-        "pretrained_model_name": "THUDM/chatglm-6b-int8",
-        "local_model_path": None,
-        "provides": "ChatGLM"
-    },
+    # "chatglm-6b-int8": {
+    #     "name": "chatglm-6b-int8",
+    #     "pretrained_model_name": "THUDM/chatglm-6b-int8",
+    #     "local_model_path": None,
+    #     "provides": "ChatGLM"
+    # },
     "chatglm-6b": {
         "name": "chatglm-6b",
         "pretrained_model_name": "THUDM/chatglm-6b",
@@ -89,8 +92,12 @@ llm_model_dict = {
     },
 }
 
+llm_model_dict["chatglm-6b"]["pretrained_model_name"] = "/llm_models/chatglm-6b"
+llm_model_dict["chatglm-6b-int4"]["pretrained_model_name"] = "/llm_models/chatglm-6b-int4"
+# llm_model_dict["chatglm-6b-int4"]["pretrained_model_name"] = "/llm_models/chatglm-6b-int8"
+
 # LLM 名称
-LLM_MODEL = "chatglm-6b"
+LLM_MODEL = "chatglm-6b-int4"
 # 如果你需要加载本地的model，指定这个参数  ` --no-remote-model`，或者下方参数修改为 `True`
 NO_REMOTE_MODEL = False
 # 量化加载8bit 模型
@@ -164,4 +171,4 @@ OPEN_CROSS_DOMAIN = False
 # 使用 Bing 搜索需要使用 Bing Subscription Key
 # 具体申请方式请见 https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/python
 BING_SEARCH_URL = "https://api.bing.microsoft.com/v7.0/search"
-BING_SUBSCRIPTION_KEY = ""
+BING_SUBSCRIPTION_KEY = "f72d3fff79644028bf7498479e0991d2"
