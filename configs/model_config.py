@@ -54,41 +54,47 @@ llm_model_dict = {
         "provides": "ChatGLM"
     },
 
-    "chatyuan": {
-        "name": "chatyuan",
-        "pretrained_model_name": "ClueAI/ChatYuan-large-v2",
-        "local_model_path": None,
-        "provides": None
-    },
-    "moss": {
-        "name": "moss",
-        "pretrained_model_name": "fnlp/moss-moon-003-sft",
-        "local_model_path": None,
-        "provides": "MOSSLLM"
-    },
-    "vicuna-13b-hf": {
-        "name": "vicuna-13b-hf",
-        "pretrained_model_name": "vicuna-13b-hf",
-        "local_model_path": None,
-        "provides": "LLamaLLM"
-    },
-
-    # 通过 fastchat 调用的模型请参考如下格式
-    "fastchat-chatglm-6b": {
-        "name": "chatglm-6b",  # "name"修改为fastchat服务中的"model_name"
-        "pretrained_model_name": "chatglm-6b",
+    # "chatyuan": {
+    #     "name": "chatyuan",
+    #     "pretrained_model_name": "ClueAI/ChatYuan-large-v2",
+    #     "local_model_path": None,
+    #     "provides": None
+    # },
+    # "moss": {
+    #     "name": "moss",
+    #     "pretrained_model_name": "fnlp/moss-moon-003-sft",
+    #     "local_model_path": None,
+    #     "provides": "MOSSLLM"
+    # },
+    # "vicuna-13b-hf": {
+    #     "name": "vicuna-13b-hf",
+    #     "pretrained_model_name": "vicuna-13b-hf",
+    #     "local_model_path": None,
+    #     "provides": "LLamaLLM"
+    # },
+    # # 通过 fastchat 调用的模型请参考如下格式
+    # "fastchat-chatglm-6b": {
+    #     "name": "chatglm-6b",  # "name"修改为fastchat服务中的"model_name"
+    #     "pretrained_model_name": "chatglm-6b",
+    #     "local_model_path": None,
+    #     "provides": "FastChatOpenAILLM",  # 使用fastchat api时，需保证"provides"为"FastChatOpenAILLM"
+    #     "api_base_url": "http://localhost:8000/v1"  # "name"修改为fastchat服务中的"api_base_url"
+    # },
+    # # 通过 fastchat 调用的模型请参考如下格式
+    # "fastchat-vicuna-13b-hf": {
+    #     "name": "vicuna-13b-hf",  # "name"修改为fastchat服务中的"model_name"
+    #     "pretrained_model_name": "vicuna-13b-hf",
+    #     "local_model_path": None,
+    #     "provides": "FastChatOpenAILLM",  # 使用fastchat api时，需保证"provides"为"FastChatOpenAILLM"
+    #     "api_base_url": "http://localhost:8000/v1"  # "name"修改为fastchat服务中的"api_base_url"
+    # },
+    "gpt-3.5-turbo": {
+        "name": "gpt-3.5-turbo",  # "name"修改为fastchat服务中的"model_name"
+        "pretrained_model_name": "gpt-3.5-turbo",
         "local_model_path": None,
         "provides": "FastChatOpenAILLM",  # 使用fastchat api时，需保证"provides"为"FastChatOpenAILLM"
-        "api_base_url": "http://localhost:8000/v1"  # "name"修改为fastchat服务中的"api_base_url"
-    },
-
-    # 通过 fastchat 调用的模型请参考如下格式
-    "fastchat-vicuna-13b-hf": {
-        "name": "vicuna-13b-hf",  # "name"修改为fastchat服务中的"model_name"
-        "pretrained_model_name": "vicuna-13b-hf",
-        "local_model_path": None,
-        "provides": "FastChatOpenAILLM",  # 使用fastchat api时，需保证"provides"为"FastChatOpenAILLM"
-        "api_base_url": "http://localhost:8000/v1"  # "name"修改为fastchat服务中的"api_base_url"
+        "api_base_url": "https://api.openai-asia.com/v1",  # "name"修改为fastchat服务中的"api_base_url",
+        "api_key": "",
     },
 }
 
@@ -97,7 +103,7 @@ llm_model_dict["chatglm-6b-int4"]["pretrained_model_name"] = "/llm_models/chatgl
 # llm_model_dict["chatglm-6b-int4"]["pretrained_model_name"] = "/llm_models/chatglm-6b-int8"
 
 # LLM 名称
-LLM_MODEL = "chatglm-6b-int4"
+LLM_MODEL = "gpt-3.5-turbo"
 # 如果你需要加载本地的model，指定这个参数  ` --no-remote-model`，或者下方参数修改为 `True`
 NO_REMOTE_MODEL = False
 # 量化加载8bit 模型
@@ -171,4 +177,4 @@ OPEN_CROSS_DOMAIN = False
 # 使用 Bing 搜索需要使用 Bing Subscription Key
 # 具体申请方式请见 https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/python
 BING_SEARCH_URL = "https://api.bing.microsoft.com/v7.0/search"
-BING_SUBSCRIPTION_KEY = "f72d3fff79644028bf7498479e0991d2"
+BING_SUBSCRIPTION_KEY = ""
