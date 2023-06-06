@@ -162,6 +162,18 @@ def get_vector_store(vs_id, files, sentence_size, history, one_conent, one_conte
     logger.info(file_status)
     return vs_path, None, history + [[None, file_status]]
 
+def get_youtube_vector_store(vs_id, youtube_url, history, sentence_size, trans_mode):
+    if local_doc_qa.llm and local_doc_qa.embeddings:
+        vs_path = os.path.join(VS_ROOT_PATH, vs_id)
+        vs_path, youtube_url, title = local_doc_qa.youtube_knowledge_add(vs_path, youtube_url, sentence_size, trans_mode)
+        if vs_path:
+            youtube_status = f"已添加 {title}:{youtube_url} 内容至知识库，并已加载知识库，请开始提问"
+        else:
+            youtube_status = f"youtube未成功加载，请重试{title}"
+    else:
+        youtube_status = "模型未完成加载，请先在加载模型后再导入文件"
+    logger.info(file_status)
+    return vs_path, youtube_url, history + [[None, youtube_status]]
 
 def change_vs_name_input(vs_id, history):
     if vs_id == "新建知识库":
@@ -333,6 +345,12 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
                                                    file_count="directory",
                                                    show_label=False)
                             load_folder_button = gr.Button("上传文件夹并加载知识库")
+                        with gr.Tab("添加YouTube内容:"):
+                            youtube_url = gr.Textbox(label="YouTube地址", placeholder="请输入要添加YouTube地址", lines=1)
+                            trans_mode = gr.Radio(["original", "zh-CN"],
+                                label="字幕翻译",
+                                value="original")
+                            load_youtube_button = gr.Button("获取内容并加载知识库")
                     vs_refresh.click(fn=refresh_vs_list,
                                      inputs=[],
                                      outputs=select_vs)
@@ -351,6 +369,10 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
                                              inputs=[select_vs, folder_files, sentence_size, chatbot, vs_add,
                                                      vs_add],
                                              outputs=[vs_path, folder_files, chatbot], )
+                    load_youtube_button.click(get_youtube_vector_store,
+                                              show_progress=True,
+                                              inputs=[select_vs, youtube_url, chatbot, sentence_size, trans_mode],
+                                              outputs=[vs_path, youtube_url, chatbot])
                     flag_csv_logger.setup([query, vs_path, chatbot, mode], "flagged")
                     query.submit(get_answer,
                                  [query, vs_path, chatbot, mode],
@@ -499,7 +521,7 @@ with gr.Blocks(css=block_css, theme=gr.themes.Default(**default_theme_args)) as 
 (demo
  .queue(concurrency_count=3)
  .launch(server_name='0.0.0.0',
-         server_port=7860,
+         server_port=7866,
          show_api=False,
          share=False,
          inbrowser=False))

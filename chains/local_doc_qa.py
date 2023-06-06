@@ -1,9 +1,13 @@
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.document_loaders import UnstructuredFileLoader, TextLoader
+from langchain.document_loaders import UnstructuredFileLoader, TextLoader, YoutubeLoader
+from langchain.agents import initialize_agent, Tool
+from langchain.agents import AgentType
+from youtube_transcript_api import YouTubeTranscriptApi
 from configs.model_config import *
 import datetime
 from textsplitter import ChineseTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from typing import List, Tuple, Dict
 from langchain.docstore.document import Document
 import numpy as np
@@ -11,8 +15,7 @@ from utils import torch_gc
 from tqdm import tqdm
 from pypinyin import lazy_pinyin
 from loader import UnstructuredPaddleImageLoader, UnstructuredPaddlePDFLoader
-from models.base import (BaseAnswer,
-                         AnswerResult)
+from models.base import (BaseAnswer, AnswerResult)
 from models.loader.args import parser
 from models.loader import LoaderCheckPoint
 import models.shared as shared
@@ -289,6 +292,57 @@ class LocalDocQA:
         except Exception as e:
             logger.error(e)
             return None, [one_title]
+    
+    def get_youtube_subtitle(self, video_id, trans_mode=False):
+        from youtube_transcript_api import (NoTranscriptFound, TranscriptsDisabled)
+
+        try:
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        except TranscriptsDisabled:
+            return None, []
+
+        lang_type = "zh-CN"
+        try:
+            transcript = transcript_list.find_transcript(["zh-CN", "zh-Hans"])
+        except NoTranscriptFound:
+            transcript = transcript_list.find_transcript(["en"])
+            if trans_mode:
+                transcript = transcript.translate("zh-Hans")
+            else:
+                lang_type = "en"
+
+        transcript_pieces = transcript.fetch()
+        transcript = " ".join([t["text"].strip(" ") for t in transcript_pieces])
+
+        return lang_type, [Document(page_content=transcript, metadata={"source": video_id})]
+
+
+    def youtube_knowledge_add(self, vs_path, youtube_url, sentence_size, trans_mode):
+        try:
+            if not vs_path or not youtube_url:
+                logger.info("知识库添加错误，请确认知识库名字、Youtube地址是否正确！")
+                return None, youtube_url, youtube_url
+
+            loader = YoutubeLoader.from_youtube_url(youtube_url)
+            lang_type, docs = self.get_youtube_subtitle(loader.video_id, trans_mode == "zh-CN")
+            if len(docs) == 0:
+                return None, youtube_url, ", 该Youtube内容关闭了字幕无法添加到知识库！"
+            
+            if lang_type == "zh-CN":
+                text_splitter = ChineseTextSplitter(pdf=False, sentence_size=sentence_size)
+            else:
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+
+            docs = text_splitter.split_documents(docs)
+            
+            vector_store = FAISS.from_documents(docs, self.embeddings) 
+            torch_gc()
+            vector_store.save_local(vs_path)
+            return vs_path, youtube_url, loader._get_video_info()['title']
+        except Exception as e:
+            logger.error(e)
+            return None, youtube_url, youtube_url
+
 
     def get_knowledge_based_answer(self, query, vs_path, chat_history=[], streaming: bool = STREAMING):
         vector_store = load_vector_store(vs_path, self.embeddings)
@@ -298,7 +352,15 @@ class LocalDocQA:
         vector_store.score_threshold = self.score_threshold
         related_docs_with_score = vector_store.similarity_search_with_score(query, k=self.top_k)
         torch_gc()
-        prompt = generate_prompt(related_docs_with_score, query)
+        PROMPT_TEMPLATE = """
+Use the following context to answer the user's question.
+If you don't know the answer, say you don't, don't try to make it up. And answer in Chinese.
+-----------
+{question}
+-----------
+{context}
+        """
+        prompt = generate_prompt(related_docs_with_score, query, prompt_template=PROMPT_TEMPLATE)
 
         for answer_result in self.llm.generatorAnswer(prompt=prompt, history=chat_history,
                                                       streaming=streaming):
@@ -349,36 +411,3 @@ class LocalDocQA:
                         "result": resp,
                         "source_documents": result_docs}
             yield response, history
-
-
-if __name__ == "__main__":
-    # 初始化消息
-    args = None
-    args = parser.parse_args(args=['--model-dir', '/media/checkpoint/', '--model', 'chatglm-6b', '--no-remote-model'])
-
-    args_dict = vars(args)
-    shared.loaderCheckPoint = LoaderCheckPoint(args_dict)
-    llm_model_ins = shared.loaderLLM()
-    llm_model_ins.set_history_len(LLM_HISTORY_LEN)
-
-    local_doc_qa = LocalDocQA()
-    local_doc_qa.init_cfg(llm_model=llm_model_ins)
-    query = "本项目使用的embedding模型是什么，消耗多少显存"
-    vs_path = "/media/gpt4-pdf-chatbot-langchain/dev-langchain-ChatGLM/vector_store/test"
-    last_print_len = 0
-    # for resp, history in local_doc_qa.get_knowledge_based_answer(query=query,
-    #                                                              vs_path=vs_path,
-    #                                                              chat_history=[],
-    #                                                              streaming=True):
-    for resp, history in local_doc_qa.get_search_result_based_answer(query=query,
-                                                                     chat_history=[],
-                                                                     streaming=True):
-        print(resp["result"][last_print_len:], end="", flush=True)
-        last_print_len = len(resp["result"])
-    source_text = [f"""出处 [{inum + 1}] {doc.metadata['source'] if doc.metadata['source'].startswith("http") 
-                   else os.path.split(doc.metadata['source'])[-1]}：\n\n{doc.page_content}\n\n"""
-                   # f"""相关度：{doc.metadata['score']}\n\n"""
-                   for inum, doc in
-                   enumerate(resp["source_documents"])]
-    logger.info("\n\n" + "\n\n".join(source_text))
-    pass
